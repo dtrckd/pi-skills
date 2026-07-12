@@ -8,7 +8,7 @@ const useProfile = process.argv[2] === "--profile";
 if (process.argv[2] && process.argv[2] !== "--profile") {
 	console.log("Usage: browser-start.js [--profile]");
 	console.log("\nOptions:");
-	console.log("  --profile  Copy your default Chrome profile (cookies, logins)");
+	console.log("  --profile  Copy your default Chromium profile (cookies, logins)");
 	process.exit(1);
 }
 
@@ -21,7 +21,7 @@ try {
 		defaultViewport: null,
 	});
 	await browser.disconnect();
-	console.log("✓ Chrome already running on :9222");
+	console.log("✓ Chromium already running on :9222");
 	process.exit(0);
 } catch {}
 
@@ -45,14 +45,14 @@ if (useProfile) {
 			--exclude='*/Current Tabs' \
 			--exclude='*/Last Session' \
 			--exclude='*/Last Tabs' \
-			"${process.env.HOME}/Library/Application Support/Google/Chrome/" "${SCRAPING_DIR}/"`,
+			"${process.env.HOME}/.config/chromium/" "${SCRAPING_DIR}/"`,
 		{ stdio: "pipe" },
 	);
 }
 
-// Start Chrome with flags to force new instance
+// Start Chromium with flags to force new instance
 spawn(
-	"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+	"/usr/bin/chromium",
 	[
 		"--remote-debugging-port=9222",
 		`--user-data-dir=${SCRAPING_DIR}`,
@@ -62,7 +62,7 @@ spawn(
 	{ detached: true, stdio: "ignore" },
 ).unref();
 
-// Wait for Chrome to be ready
+// Wait for Chromium to be ready
 let connected = false;
 for (let i = 0; i < 30; i++) {
 	try {
@@ -79,8 +79,8 @@ for (let i = 0; i < 30; i++) {
 }
 
 if (!connected) {
-	console.error("✗ Failed to connect to Chrome");
+	console.error("✗ Failed to connect to Chromium");
 	process.exit(1);
 }
 
-console.log(`✓ Chrome started on :9222${useProfile ? " with your profile" : ""}`);
+console.log(`✓ Chromium started on :9222${useProfile ? " with your profile" : ""}`);
