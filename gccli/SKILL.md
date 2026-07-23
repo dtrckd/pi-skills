@@ -1,6 +1,7 @@
 ---
 name: gccli
 description: Google Calendar CLI for listing calendars, viewing/creating/updating events, and checking availability.
+disable-model-invocation: true
 ---
 
 # Google Calendar CLI

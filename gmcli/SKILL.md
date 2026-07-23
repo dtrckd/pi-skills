@@ -1,6 +1,7 @@
 ---
 name: gmcli
 description: Gmail CLI for searching emails, reading threads, sending messages, managing drafts, and handling labels/attachments.
+disable-model-invocation: true
 ---
 
 # Gmail CLI

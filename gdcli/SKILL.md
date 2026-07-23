@@ -1,6 +1,7 @@
 ---
 name: gdcli
 description: Google Drive CLI for listing, searching, uploading, downloading, and sharing files and folders.
+disable-model-invocation: true
 ---
 
 # Google Drive CLI

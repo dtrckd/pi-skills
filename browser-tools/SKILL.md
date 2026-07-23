@@ -1,6 +1,7 @@
 ---
 name: browser-tools
 description: Interactive browser automation via Chrome DevTools Protocol. Use when you need to interact with web pages, test frontends, or when user interaction with a visible browser is required.
+disable-model-invocation: true
 ---
 
 # Browser Tools
@@ -79,6 +80,15 @@ Display all cookies for the current tab including domain, path, httpOnly, and se
 ```
 
 Navigate to a URL and extract readable content as markdown. Uses Mozilla Readability for article extraction and Turndown for HTML-to-markdown conversion. Works on pages with JavaScript content (waits for page to load).
+
+## Download Files
+
+```bash
+{baseDir}/browser-download.js https://example.com/invoice.pdf
+{baseDir}/browser-download.js --click "a.invoice-download" --dir /tmp/bills
+```
+
+Download a file either from a direct URL or by clicking an element in the current tab (for POST/token-protected downloads). Prints the saved file path (defaults to a temp dir). Downloads inherit cookies/auth from the running browser session. If a PDF opens in Chrome's viewer instead of downloading, use `--click` on the page's download button.
 
 ## When to Use
 
