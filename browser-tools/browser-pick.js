@@ -2,6 +2,7 @@
 
 import puppeteer from "puppeteer-core";
 
+const PORT = process.env.BROWSER_TOOLS_PORT || "9222";
 const message = process.argv.slice(2).join(" ");
 if (!message) {
 	console.log("Usage: browser-pick.js 'message'");
@@ -12,7 +13,7 @@ if (!message) {
 
 const b = await Promise.race([
 	puppeteer.connect({
-		browserURL: "http://localhost:9222",
+		browserURL: `http://localhost:${PORT}`,
 		defaultViewport: null,
 	}),
 	new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000)),

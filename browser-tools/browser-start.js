@@ -4,6 +4,7 @@ import { spawn, execSync } from "node:child_process";
 import puppeteer from "puppeteer-core";
 
 const useProfile = process.argv[2] === "--profile";
+const PORT = process.env.BROWSER_TOOLS_PORT || "9222";
 
 if (process.argv[2] && process.argv[2] !== "--profile") {
 	console.log("Usage: browser-start.js [--profile]");
@@ -12,16 +13,17 @@ if (process.argv[2] && process.argv[2] !== "--profile") {
 	process.exit(1);
 }
 
-const SCRAPING_DIR = `${process.env.HOME}/.cache/browser-tools`;
+// Default port keeps the legacy dir; custom ports get their own profile
+const SCRAPING_DIR = `${process.env.HOME}/.cache/browser-tools${PORT === "9222" ? "" : `-${PORT}`}`;
 
-// Check if already running on :9222
+// Check if already running
 try {
 	const browser = await puppeteer.connect({
-		browserURL: "http://localhost:9222",
+		browserURL: `http://localhost:${PORT}`,
 		defaultViewport: null,
 	});
 	await browser.disconnect();
-	console.log("✓ Chromium already running on :9222");
+	console.log(`✓ Chromium already running on :${PORT}`);
 	process.exit(0);
 } catch {}
 
@@ -54,7 +56,7 @@ if (useProfile) {
 spawn(
 	"/usr/bin/chromium",
 	[
-		"--remote-debugging-port=9222",
+		`--remote-debugging-port=${PORT}`,
 		`--user-data-dir=${SCRAPING_DIR}`,
 		"--no-first-run",
 		"--no-default-browser-check",
@@ -67,7 +69,7 @@ let connected = false;
 for (let i = 0; i < 30; i++) {
 	try {
 		const browser = await puppeteer.connect({
-			browserURL: "http://localhost:9222",
+			browserURL: `http://localhost:${PORT}`,
 			defaultViewport: null,
 		});
 		await browser.disconnect();
@@ -83,4 +85,4 @@ if (!connected) {
 	process.exit(1);
 }
 
-console.log(`✓ Chromium started on :9222${useProfile ? " with your profile" : ""}`);
+console.log(`✓ Chromium started on :${PORT}${useProfile ? " with your profile" : ""}`);

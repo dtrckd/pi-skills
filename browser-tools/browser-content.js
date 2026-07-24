@@ -6,6 +6,8 @@ import { JSDOM } from "jsdom";
 import TurndownService from "turndown";
 import { gfm } from "turndown-plugin-gfm";
 
+const PORT = process.env.BROWSER_TOOLS_PORT || "9222";
+
 // Global timeout - exit if script takes too long
 const TIMEOUT = 30000;
 const timeoutId = setTimeout(() => {
@@ -26,7 +28,7 @@ if (!url) {
 
 const b = await Promise.race([
 	puppeteer.connect({
-		browserURL: "http://localhost:9222",
+		browserURL: `http://localhost:${PORT}`,
 		defaultViewport: null,
 	}),
 	new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000)),

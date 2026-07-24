@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Browser Tools
 
-Chrome DevTools Protocol tools for agent-assisted web automation. These tools connect to Chrome running on `:9222` with remote debugging enabled.
+Chrome DevTools Protocol tools for agent-assisted web automation. These tools connect to Chrome with remote debugging enabled (default port `:9222`, overridable via `BROWSER_TOOLS_PORT`).
 
 ## Setup
 
@@ -24,7 +24,18 @@ npm install
 {baseDir}/browser-start.js --profile    # Copy user's profile (cookies, logins)
 ```
 
-Launch Chrome with remote debugging on `:9222`. Use `--profile` to preserve user's authentication state.
+Launch Chrome with remote debugging. Use `--profile` to preserve user's authentication state.
+
+## Multiple Instances
+
+All tools default to port `9222`. To run isolated browsers in parallel (e.g. concurrent agents), set `BROWSER_TOOLS_PORT` per instance:
+
+```bash
+BROWSER_TOOLS_PORT=9223 {baseDir}/browser-start.js --profile
+BROWSER_TOOLS_PORT=9223 {baseDir}/browser-nav.js https://example.com
+```
+
+Each port gets its own profile directory (`~/.cache/browser-tools-<port>`; the default port keeps `~/.cache/browser-tools`). Do not change the default port unless the task requires it.
 
 ## Navigate
 
