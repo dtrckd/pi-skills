@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 
-import puppeteer from "puppeteer-core";
+import { connect } from "./connect.js";
 
-const PORT = process.env.BROWSER_TOOLS_PORT || "9222";
 const code = process.argv.slice(2).join(" ");
 if (!code) {
 	console.log("Usage: browser-eval.js 'code'");
@@ -12,17 +11,7 @@ if (!code) {
 	process.exit(1);
 }
 
-const b = await Promise.race([
-	puppeteer.connect({
-		browserURL: `http://localhost:${PORT}`,
-		defaultViewport: null,
-	}),
-	new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000)),
-]).catch((e) => {
-	console.error("✗ Could not connect to browser:", e.message);
-	console.error("  Run: browser-start.js");
-	process.exit(1);
-});
+const b = await connect();
 
 const p = (await b.pages()).at(-1);
 

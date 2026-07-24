@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Browser Tools
 
-Chrome DevTools Protocol tools for agent-assisted web automation. These tools connect to Chrome with remote debugging enabled (default port `:9222`, overridable via `BROWSER_TOOLS_PORT`).
+Chrome DevTools Protocol tools for agent-assisted web automation. These tools connect to Chrome with remote debugging enabled (default port `:9222`, overridable via `BROWSER_TOOLS_PORT`). Connect timeout defaults to 15s, overridable via `BROWSER_TOOLS_TIMEOUT` (ms); iframe-heavy pages are handled automatically (iframe targets are filtered out of connect).
 
 ## Setup
 
@@ -97,9 +97,18 @@ Navigate to a URL and extract readable content as markdown. Uses Mozilla Readabi
 ```bash
 {baseDir}/browser-download.js https://example.com/invoice.pdf
 {baseDir}/browser-download.js --click "a.invoice-download" --dir /tmp/bills
+{baseDir}/browser-download.js --url https://pay.example.com/inv/123 --click-text "Download invoice" --dir /tmp/bills --out 2026-07-04.pdf
 ```
 
-Download a file either from a direct URL or by clicking an element in the current tab (for POST/token-protected downloads). Prints the saved file path (defaults to a temp dir). Downloads inherit cookies/auth from the running browser session. If a PDF opens in Chrome's viewer instead of downloading, use `--click` on the page's download button.
+Download a file from a direct URL, or by clicking an element (for POST/token-protected downloads). Prints the saved file path (defaults to a temp dir). Downloads inherit cookies/auth from the running browser session.
+
+- `--url <page>`: navigate the current tab to a page first, then click — the one-call idiom for payment portals where each bill lives on its own page.
+- `--click <selector>`: click by CSS selector in the current (or `--url`) page.
+- `--click-text <regex>`: click the first button/link whose visible text matches (case-insensitive). Use when the button has no stable id/class (common on Stripe-like portals). Waits up to 10s for late-rendering buttons.
+- `--out <name>`: rename the downloaded file (overwrites an existing file with that name). Use it when portals all suggest `invoice.pdf`.
+- Fails fast (~5s) if the URL renders a page or the click doesn't trigger a download, instead of hanging 120s.
+
+If a PDF opens in Chrome's viewer instead of downloading, use `--click`/`--click-text` on the page's download button.
 
 ## When to Use
 

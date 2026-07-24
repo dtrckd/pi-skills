@@ -1,12 +1,10 @@
 #!/usr/bin/env node
 
-import puppeteer from "puppeteer-core";
+import { connect } from "./connect.js";
 import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
 import TurndownService from "turndown";
 import { gfm } from "turndown-plugin-gfm";
-
-const PORT = process.env.BROWSER_TOOLS_PORT || "9222";
 
 // Global timeout - exit if script takes too long
 const TIMEOUT = 30000;
@@ -26,17 +24,7 @@ if (!url) {
 	process.exit(1);
 }
 
-const b = await Promise.race([
-	puppeteer.connect({
-		browserURL: `http://localhost:${PORT}`,
-		defaultViewport: null,
-	}),
-	new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000)),
-]).catch((e) => {
-	console.error("✗ Could not connect to browser:", e.message);
-	console.error("  Run: browser-start.js");
-	process.exit(1);
-});
+const b = await connect();
 
 const p = (await b.pages()).at(-1);
 if (!p) {

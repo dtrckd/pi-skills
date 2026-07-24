@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 
-import puppeteer from "puppeteer-core";
+import { connect } from "./connect.js";
 
-const PORT = process.env.BROWSER_TOOLS_PORT || "9222";
 const args = process.argv.slice(2);
 const newTab = args.includes("--new");
 const reload = args.includes("--reload");
@@ -17,29 +16,23 @@ if (!url) {
 	process.exit(1);
 }
 
-const b = await Promise.race([
-	puppeteer.connect({
-		browserURL: `http://localhost:${PORT}`,
-		defaultViewport: null,
-	}),
-	new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000)),
-]).catch((e) => {
-	console.error("✗ Could not connect to browser:", e.message);
-	console.error("  Run: browser-start.js");
-	process.exit(1);
-});
+const b = await connect();
+
+// Bounded goto: connect.js filters iframe targets, which starves the lifecycle
+// watcher on OOPIF-heavy pages even though the page loads fine. Verify via url().
+const go = (p) => p.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 }).catch(() => {});
 
 if (newTab) {
 	const p = await b.newPage();
-	await p.goto(url, { waitUntil: "domcontentloaded" });
-	console.log("✓ Opened:", url);
+	await go(p);
+	console.log("✓ Opened:", p.url());
 } else {
 	const p = (await b.pages()).at(-1);
-	await p.goto(url, { waitUntil: "domcontentloaded" });
+	await go(p);
 	if (reload) {
-		await p.reload({ waitUntil: "domcontentloaded" });
+		await p.reload({ waitUntil: "domcontentloaded", timeout: 15000 }).catch(() => {});
 	}
-	console.log("✓ Navigated to:", url);
+	console.log("✓ Navigated to:", p.url());
 }
 
 await b.disconnect();
