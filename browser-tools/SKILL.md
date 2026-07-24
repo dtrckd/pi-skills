@@ -104,11 +104,14 @@ Download a file from a direct URL, or by clicking an element (for POST/token-pro
 
 - `--url <page>`: navigate the current tab to a page first, then click — the one-call idiom for payment portals where each bill lives on its own page.
 - `--click <selector>`: click by CSS selector in the current (or `--url`) page.
-- `--click-text <regex>`: click the first button/link whose visible text matches (case-insensitive). Use when the button has no stable id/class (common on Stripe-like portals). Waits up to 10s for late-rendering buttons.
+- `--click-text <regex>`: click the first button/link whose visible text matches (case-insensitive). Use when the button has no stable id/class (common on Stripe-like portals). Waits up to 10s for late-rendering buttons. Anchor the pattern (`^Télécharger$`) — broad regexes match nav/footer links ("Télécharger dans l'App Store") first.
+- `--nth <i>`: click the i-th (0-based) match of `--click`/`--click-text`. The idiom for invoice lists with N identical "Download" buttons and no hrefs — no need to fabricate unique selectors.
 - `--out <name>`: rename the downloaded file (overwrites an existing file with that name). Use it when portals all suggest `invoice.pdf`.
-- Fails fast (~5s) if the URL renders a page or the click doesn't trigger a download, instead of hanging 120s.
+- Fails fast (~10s) if the URL renders a page or the click doesn't trigger a download, instead of hanging 120s.
 
 If a PDF opens in Chrome's viewer instead of downloading, use `--click`/`--click-text` on the page's download button.
+
+Troubleshooting: if a download click triggers nothing at all — no download, no modal, no navigation — the SPA's download state is likely poisoned by earlier clicks. Reload the page (browser-nav.js to the same URL) and retry before investigating further.
 
 ## When to Use
 
@@ -208,6 +211,8 @@ sleep 0.5 && {baseDir}/browser-eval.js '...'
 ```
 
 Avoid long in-page timer loops (repeated `await new Promise(r => setTimeout(r, 200))` inside one eval): background tabs throttle `setTimeout` to 1s ticks, turning a 10s poll into 50s. Poll from repeated short eval calls instead.
+
+After clicking a load-more/pagination control, success is rows added OR the control itself disappearing (end of list). Poll on both — polling only on row count misreads the last page as a failure.
 
 ### Investigate Before Interacting
 

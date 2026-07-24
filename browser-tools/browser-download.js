@@ -16,6 +16,7 @@ const opt = (name) => {
 const selector = opt("--click");
 const clickText = opt("--click-text");
 const pageUrl = opt("--url");
+const nthArg = opt("--nth");
 const outName = opt("--out");
 const dirArg = opt("--dir");
 const url = args.find((a, i) => !a.startsWith("--") && !optValueIdx.has(i));
@@ -23,16 +24,23 @@ const url = args.find((a, i) => !a.startsWith("--") && !optValueIdx.has(i));
 const clickMode = !!(selector || clickText);
 if ((!url && !clickMode) || (url && clickMode) || (selector && clickText) || (pageUrl && !clickMode)) {
 	console.log("Usage: browser-download.js <url> [--dir <path>] [--out <name>]");
-	console.log("       browser-download.js [--url <page>] --click <selector> [--dir <path>] [--out <name>]");
-	console.log('       browser-download.js [--url <page>] --click-text <regex> [--dir <path>] [--out <name>]');
+	console.log("       browser-download.js [--url <page>] --click <selector> [--nth <i>] [--dir <path>] [--out <name>]");
+	console.log('       browser-download.js [--url <page>] --click-text <regex> [--nth <i>] [--dir <path>] [--out <name>]');
 	console.log("\nExamples:");
 	console.log("  browser-download.js https://example.com/invoice.pdf");
 	console.log('  browser-download.js --click "a.invoice-download" --dir /tmp/bills');
 	console.log('  browser-download.js --url https://pay.example.com/inv/123 --click-text "Download invoice" --out 2026-07-04.pdf');
 	console.log("\n--url navigates the current tab first (for portals where each bill lives on its own page).");
-	console.log("--click-text matches a button/link by its visible text (case-insensitive regex).");
+	console.log("--click-text matches a button/link by its visible text (case-insensitive regex). Anchor it (^...$) to avoid nav/footer matches.");
+	console.log("--nth picks the i-th (0-based) match — for lists of identical buttons (e.g. one 'Download' per invoice row).");
 	console.log("--out renames the download (overwrites an existing file with that name).");
 	console.log("\nDownloads inherit cookies/auth from the running browser session.");
+	process.exit(1);
+}
+
+const nth = nthArg ? Number.parseInt(nthArg, 10) : 0;
+if (Number.isNaN(nth) || nth < 0) {
+	console.error("✗ --nth must be a non-negative integer");
 	process.exit(1);
 }
 
@@ -102,17 +110,18 @@ if (clickMode) {
 	// throttled to 1s in unfocused tabs, so the page can't poll itself.
 	const tryClick = () =>
 		p.evaluate(
-			(sel, textRe) => {
+			(sel, textRe, n) => {
 				const el = sel
-					? document.querySelector(sel)
-					: Array.from(document.querySelectorAll('button, a, [role="button"]')).find((e) =>
+					? document.querySelectorAll(sel)[n]
+					: Array.from(document.querySelectorAll('button, a, [role="button"]')).filter((e) =>
 							new RegExp(textRe, "i").test(e.textContent),
-						);
+						)[n];
 				if (el) el.click();
 				return !!el;
 			},
 			selector,
 			clickText,
+			nth,
 		);
 	let found = false;
 	for (let i = 0; i < 50 && !found; i++) {
@@ -120,7 +129,9 @@ if (clickMode) {
 		if (!found) await new Promise((r) => setTimeout(r, 200));
 	}
 	if (!found) {
-		console.error(`✗ No element matches ${selector ? `selector: ${selector}` : `text: ${clickText}`}`);
+		console.error(
+			`✗ No element matches ${selector ? `selector: ${selector}` : `text: ${clickText}`}${nth ? ` at index ${nth}` : ""}`,
+		);
 		process.exit(1);
 	}
 	failFast("The click may not be a download trigger, or the element opens a viewer instead.");
