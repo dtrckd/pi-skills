@@ -207,6 +207,8 @@ If DOM updates after actions, add a small delay with bash:
 sleep 0.5 && {baseDir}/browser-eval.js '...'
 ```
 
+Avoid long in-page timer loops (repeated `await new Promise(r => setTimeout(r, 200))` inside one eval): background tabs throttle `setTimeout` to 1s ticks, turning a 10s poll into 50s. Poll from repeated short eval calls instead.
+
 ### Investigate Before Interacting
 
 Always start by understanding the page structure:

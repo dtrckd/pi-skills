@@ -19,20 +19,30 @@ if (!url) {
 const b = await connect();
 
 // Bounded goto: connect.js filters iframe targets, which starves the lifecycle
-// watcher on OOPIF-heavy pages even though the page loads fine. Verify via url().
-const go = (p) => p.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 }).catch(() => {});
+// watcher on OOPIF-heavy pages even though the page loads fine. Only a timeout is
+// tolerated (reported); real navigation errors (DNS, refused, bad URL) exit 1.
+let timedOut = false;
+const tolerate = (e) => {
+	if (e.name !== "TimeoutError") {
+		console.error("✗ Navigation failed:", e.message);
+		process.exit(1);
+	}
+	timedOut = true;
+};
+const go = (p) => p.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 }).catch(tolerate);
+const note = () => (timedOut ? " (load tracking timed out; verify with browser-eval.js)" : "");
 
 if (newTab) {
 	const p = await b.newPage();
 	await go(p);
-	console.log("✓ Opened:", p.url());
+	console.log(`✓ Opened: ${p.url()}${note()}`);
 } else {
 	const p = (await b.pages()).at(-1);
 	await go(p);
 	if (reload) {
-		await p.reload({ waitUntil: "domcontentloaded", timeout: 15000 }).catch(() => {});
+		await p.reload({ waitUntil: "domcontentloaded", timeout: 15000 }).catch(tolerate);
 	}
-	console.log("✓ Navigated to:", p.url());
+	console.log(`✓ Navigated to: ${p.url()}${note()}`);
 }
 
 await b.disconnect();

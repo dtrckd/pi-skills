@@ -6,21 +6,18 @@ import { join, resolve } from "node:path";
 import { connect } from "./connect.js";
 
 const args = process.argv.slice(2);
+const optValueIdx = new Set();
 const opt = (name) => {
 	const i = args.indexOf(name);
-	return i !== -1 ? args[i + 1] : null;
+	if (i === -1) return null;
+	optValueIdx.add(i + 1);
+	return args[i + 1];
 };
 const selector = opt("--click");
 const clickText = opt("--click-text");
 const pageUrl = opt("--url");
 const outName = opt("--out");
 const dirArg = opt("--dir");
-
-const optValueIdx = new Set();
-for (const name of ["--click", "--click-text", "--url", "--out", "--dir"]) {
-	const i = args.indexOf(name);
-	if (i !== -1) optValueIdx.add(i + 1);
-}
 const url = args.find((a, i) => !a.startsWith("--") && !optValueIdx.has(i));
 
 const clickMode = !!(selector || clickText);
@@ -37,6 +34,17 @@ if ((!url && !clickMode) || (url && clickMode) || (selector && clickText) || (pa
 	console.log("--out renames the download (overwrites an existing file with that name).");
 	console.log("\nDownloads inherit cookies/auth from the running browser session.");
 	process.exit(1);
+}
+
+// Validate the regex now: inside the page it would be swallowed by the poll
+// and misreported as "no element matches" after 10s.
+if (clickText) {
+	try {
+		new RegExp(clickText, "i");
+	} catch (e) {
+		console.error("✗ Invalid --click-text regex:", e.message);
+		process.exit(1);
+	}
 }
 
 // CDP requires an absolute downloadPath
@@ -75,10 +83,12 @@ const done = new Promise((res, rej) => {
 
 // Fail fast: if the action lands on a normal page instead of triggering a
 // download, abort after a short grace period rather than waiting 120s.
+// 10s: server-side PDF generation can take a few seconds before the download begins.
+const GRACE = 10_000;
 const failFast = async (hint) => {
-	await new Promise((r) => setTimeout(r, 5000));
+	await new Promise((r) => setTimeout(r, GRACE));
 	if (!started) {
-		console.error(`✗ No download triggered within 5s. ${hint}`);
+		console.error(`✗ No download triggered within ${GRACE / 1000}s. ${hint}`);
 		process.exit(1);
 	}
 };

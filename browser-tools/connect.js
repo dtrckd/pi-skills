@@ -1,6 +1,6 @@
 import puppeteer from "puppeteer-core";
 
-export const PORT = process.env.BROWSER_TOOLS_PORT || "9222";
+const PORT = process.env.BROWSER_TOOLS_PORT || "9222";
 const TIMEOUT = Number(process.env.BROWSER_TOOLS_TIMEOUT || 15000);
 
 // Shared connect: connect init waits for every page AND iframe target to attach,
@@ -23,7 +23,7 @@ export async function connect() {
 		]);
 	} catch (e) {
 		// Distinguish "browser down" from "browser alive but connect slow"
-		const alive = await fetch(`http://localhost:${PORT}/json/version`)
+		const alive = await fetch(`http://localhost:${PORT}/json/version`, { signal: AbortSignal.timeout(2000) })
 			.then((r) => r.ok)
 			.catch(() => false);
 		console.error("✗ Could not connect to browser:", e.message);

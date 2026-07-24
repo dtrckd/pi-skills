@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import { spawn, execSync } from "node:child_process";
-import puppeteer from "puppeteer-core";
 
 const useProfile = process.argv[2] === "--profile";
 const PORT = process.env.BROWSER_TOOLS_PORT || "9222";
@@ -16,16 +15,17 @@ if (process.argv[2] && process.argv[2] !== "--profile") {
 // Default port keeps the legacy dir; custom ports get their own profile
 const SCRAPING_DIR = `${process.env.HOME}/.cache/browser-tools${PORT === "9222" ? "" : `-${PORT}`}`;
 
-// Check if already running
-try {
-	const browser = await puppeteer.connect({
-		browserURL: `http://localhost:${PORT}`,
-		defaultViewport: null,
-	});
-	await browser.disconnect();
+// Bounded liveness probe: a full CDP connect can hang on a wedged browser,
+// and its speed depends on what page the browser is sitting on.
+const alive = () =>
+	fetch(`http://localhost:${PORT}/json/version`, { signal: AbortSignal.timeout(2000) })
+		.then((r) => r.ok)
+		.catch(() => false);
+
+if (await alive()) {
 	console.log(`✓ Chromium already running on :${PORT}`);
 	process.exit(0);
-} catch {}
+}
 
 // Setup profile directory
 execSync(`mkdir -p "${SCRAPING_DIR}"`, { stdio: "ignore" });
@@ -67,17 +67,11 @@ spawn(
 // Wait for Chromium to be ready
 let connected = false;
 for (let i = 0; i < 30; i++) {
-	try {
-		const browser = await puppeteer.connect({
-			browserURL: `http://localhost:${PORT}`,
-			defaultViewport: null,
-		});
-		await browser.disconnect();
+	if (await alive()) {
 		connected = true;
 		break;
-	} catch {
-		await new Promise((r) => setTimeout(r, 500));
 	}
+	await new Promise((r) => setTimeout(r, 500));
 }
 
 if (!connected) {
