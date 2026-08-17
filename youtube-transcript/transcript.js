@@ -20,6 +20,20 @@ if (videoId.includes('youtube.com') || videoId.includes('youtu.be')) {
   }
 }
 
+const watchUrl = `https://www.youtube.com/watch?v=${extractedId}`;
+
+// Metadata via oEmbed (no API key); best-effort, transcript matters more.
+try {
+  const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(watchUrl)}&format=json`);
+  if (res.ok) {
+    const { title, author_name, author_url } = await res.json();
+    console.log(`# ${title}`);
+    console.log(`Channel: ${author_name} (${author_url})`);
+    console.log(`URL: ${watchUrl}`);
+    console.log('');
+  }
+} catch {}
+
 try {
   const transcript = await YoutubeTranscript.fetchTranscript(extractedId);
   
